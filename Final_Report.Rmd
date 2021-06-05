@@ -1,0 +1,890 @@
+---
+title: "Final Project"
+author: "Ko-Wun Kim"
+date: "5/14/2021"
+output: 
+  html_document:
+    #toc: true
+    #toc_depth: 3
+    theme: paper
+    highlight: tango
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(cowplot)
+library(scales)
+library(stringr)
+```
+
+## **0. Introduction**
+#### **Project Goal and Hypothesis**
+> This project aims to analyze the criminal activites at school. Specifically, it investigates the factors for perception/occurrence of school crimes and whether becoming involved with criminal activities at school, either as an inflictor or a victim, has a significant impact on students' mental health and their future prospects. My motivation for choosing this dataset was because I have always been interested in developmental psychology; how much environmental factors influences individuals to develop into those they are today.<br/><br/>
+To clarify, the project can be said to have 2 main goals: <br/>
+1. Discover factors for school crimes <br/>
+2. Identify impact of school crimes on students.<br/><br/>
+My hypothesis is that school environment, school policies, and student characteristics will impact occurrence of school criminal activities or students' perception towards them. Moreover, higher crimes at school will have an increased negative impact on students' mental health as well as lead them to have a more pessimistic view about their future prospects. 
+
+<br/> 
+
+#### **Dataset Description**
+The dataset is from the United States Bureau of Justice Statistics. It is a 2017 survey conducted to United States students aged 12 to 18 years old. Refer to section *1. Raw Data Summary and Preparation* for further details. Here, "school" is defined as educational institution designed to advance toward a high school diploma. As this is a survey dataset, all of the variables are categorical data represented in numbers. For example, "Yes" as 1, "No" as 2. Therefore, significant amount of raw data preparation and renaming had to be performed. 
+
+<br/>
+
+#### **Analysis Procedure**
+**1. Data Preparation** <br/>
+
+The data spans across screen questions, student experiences, environmental questions, school criminal activities, student characteristics, as well as data regarding any specific incidents. Because the project is focused on identifying factors and impact of school crimes, only the relevant variables have been extracted upon analysis of variables. Because number of variables that was analyzed is very large, each variables have been grouped and labeled with prefix for easier analysis. The prefixes are as follows: 
+
+* ST: variables about student characteristics
+* SC: variables about the school environment
+* SCP: variables about school policies
+* I: variables about impact of criminal activities on students 
+* CR: variables about school criminal activities
+
+**2. Identification of Factors for School Crimes** <br/>
+
+First, to discover factors for school crimes, 1) school environment (e.g. region, diversity, size), 2) school policies regarding insurance of safety or regulation of crimes, and 3) student characteristics (e.g. race, citizenship) have been observed. The dependent variable was whether student responded to have observed any sort of crimes such as illegal substance, violent, and bullying crimes. 
+
+A statistical analysis and exploratory data analysis have been performed on each of these 3 areas. Because all data are categorical variables, there were limitations on statistical analysis that could be used. Therefore, logistic regression, a classification model, have been used on all three. For easier analysis, a dummy variable have been created for each categorical option for logistic regression. For example, if options for school religion was "Yes", "No", and "Don't Know", a binary value will be created each school_religion_yes, school_religion_no, school_religion_dont_know. Based on the logistic regression, the most statistically significant variables were determined to perform exploratory data analysis with 
+
+Similarly, there were limitations for exploratory data analysis as all data are categorical variables. Therefore, bar plots have been used for data visualizations. In this project, variations of bar plots have been made through different layouts and colors. 
+
+**3. Identification of Impact of School Crimes on Students** <br/>
+
+To identify impact of school crimes on students, school crime is the independent variable and different impact are dependent variables. The impact areas are grouped into students' perception of their future prospects and indications of their mental health. An exploratory data analysis using bar plots and pie graph have been performed to identify the impact.
+
+<br/>
+
+## **1. Raw Data Summary and Preparation**
+
+```{r Data Initialization, echo = FALSE}
+raw_data <- read.table("~/Documents/Programming R for Analytics/Final Project/ICPSR_36982/data.tsv", header=TRUE, sep="\t", stringsAsFactors = TRUE, quote ="") 
+
+```
+The raw data has `r nrow(raw_data)` rows and `r ncol(raw_data)` variables. The only relevant variables have been selected and the variable names have been changed to more readable format as follows. 
+
+```{r, tidy=TRUE, tidy.opts=list(width.cutoff=60), echo = FALSE}
+# Change variable names to more readable format 
+relevant_col <- c("V1003", "V3023A", "V3083", "V3084", "V3085", "V3086", "VS0019", "VS0021", "VS0030", "VS0031", "VS0032", 
+                  "VS0033", "VS0034", "VS0035", "VS0036", "VS0038", "VS0040", "VS0041", "VS0042", "VS0043", "VS0044", 
+                  "VS0045", "VS0046", "VS0049", "VS0051", "VS0052", "VS0053", "VS0146", "VS0148", "VS0149", "SCS186", 
+                  "SCS187", "SCS188", "SCS213", "SCS189", "VS0058", "VS0059", "SCS209", "SCS210", "VS0071", "VS0072", 
+                  "VS0073", "VS0074", "VS0075", "VS0076", "VS0077", "VS0078", "VS0079", "VS0080", "VS0089", "VS0081", 
+                  "VS0082", "VS0083", "VS0087", "VS0084", "VS0085", "VS0086", "SCS211", "VS0088", "SCS196", "SCS197", 
+                  "SCS198", "SCS199", "SCS200", "SCS201", "SCS202", "SCS203", "SCS204", "SCS205", "SCS206", "VS0124", 
+                  "VS0125", "VS0126", "VS0127", "VS0128", "VS0129", "VS0130", "VS0131", "VS0132", "VS0133", "VS0138", 
+                  "VS0139", "VS0140", "SCS214", "SCS216", "SCS217", "SCS218", "SCS220", "SCS221")
+school_crimes <- raw_data[, relevant_col]
+
+colnames(school_crimes) <- c("year", "ST_race", "ST_citizenship", "ST_sexual_orientation", "ST_gender", "ST_cur_gender", 
+                             "SC_public_private", "SC_religious", "ST_spirit_group", "ST_performing_arts", 
+                             "ST_academic_club", "ST_stugov", "ST_community_volunteer", "ST_other_club", "SCP_guards", 
+                             "SCP_metal_detector", "SCP_visitor_sign", "SCP_locker_checks", "SCP_badge", "SCP_security_camera",
+                             "SCP_code_of_conduct", "SCP_anonymous_report", "I_schoolwork_distract", "SCP_fair", "SCP_enforced",
+                             "SCP_clear_punishment", "SCP_teacher_respect", "I_adult_cares", "I_adult_listens", 
+                             "I_adult_compliments", "I_student_cares", "I_student_listens", "I_student_believes", 
+                             "CR_neighborhood_crimes", "CR_feel_safe", "CR_alcohol", "CR_marijuana", "CR_other_drugs", 
+                             "CR_other_under_influence", "CR_in_fights", "CR_fight_freq", "CR_verbal_insult", "CR_spread_rumor", 
+                             "CR_threatened", "CR_physical_bully", "CR_coerced","CR_excluded", "CR_destroyed_your_property", 
+                             "CR_bullied_freq", "CR_verbal_insult_freq", "CR_bullying_classroom", "CR_bullying_hallway_stairs",
+                             "CR_bullying_bathroom_locker", "CR_bullying_cafeteria", "CR_bullying_other_inside", "CR_bullying_outside",
+                             "CR_bullying_bus", "CR_bullying_online", "SCP_bullying_teacher", "I_bullying_schoolwork", 
+                             "I_bullying_relationship", "I_bullying_self_esteem", "I_bullying_health", "ST_bullying_race",
+                             "ST_bullying_religion", "ST_bullying_ethnicity", "ST_bullying_disability", "ST_bullying_gender",
+                             "ST_bullying_sexual_orientation", "ST_bullying_appearance", "I_fear_school", "I_fear_bus", 
+                             "I_fear_other", "CR_self_gun", "CR_self_knife", "CR_self_other_weapon", "CR_other_gun", 
+                             "CR_seen_other_gun", "SCP_gun_access", "CR_gang", "ST_grades", "I_school_after_graduation", 
+                             "I_college_graduate", "SC_region", "SC_locale", "SC_level", "SC_size", 
+                             "SC_diversity", "SC_low_income")
+
+school_crimes[school_crimes == "" | school_crimes == 99 | school_crimes == 98 | school_crimes == 9] <- NA # replace all numerical values representing "Residue", "Blank", "Missing Data", and "Out of Universe" as NA. 
+```
+
+```{r echo = FALSE}
+# Variables identified as relevant and were analyzed in this project
+colnames(school_crimes)
+```
+
+The extracted data contains `r nrow(school_crimes)` rows of data and `r ncol(school_crimes)` variables. All variables are categorical variables labeled with numeric values. These values will be converted into readable format in the following sections. 
+<br/> 
+
+## **2. Analysis on Factors for School Crimes**
+
+The first goal of the project is to discover factors for school crimes. To do so, it focuses 3 major factor areas: <br/>
+1. school's environment <br/>
+2. school policies to ensure student safety <br/>
+3. student characteristics. <br/>
+
+The project will analyze which area has the most significant impact on school crimes. The school crimes variable will be the dependent variable, and the three factor areas will be the independent variables. 
+``` {r echo = FALSE}
+# Take data relating to school criminal activities, which will be the dependent variable. 
+crimes <- dplyr::select(school_crimes, matches("CR_"))
+
+# Grouping of variables relating to school criminal activities
+illegal_substance_crimes <- crimes[c("CR_alcohol", "CR_marijuana", "CR_other_drugs", "CR_other_under_influence")]
+bullying_crimes <- crimes[c("CR_spread_rumor", "CR_verbal_insult", "CR_verbal_insult_freq", "CR_physical_bully", "CR_coerced", "CR_excluded", "CR_destroyed_your_property", "CR_bullied_freq", "CR_bullying_classroom", "CR_bullying_hallway_stairs", "CR_bullying_bathroom_locker", "CR_bullying_cafeteria", "CR_bullying_other_inside", "CR_bullying_outside", "CR_bullying_bus", "CR_bullying_online")]
+student_crime_view <- crimes[c("CR_feel_safe")]
+violent_crime <- crimes[c("CR_self_gun", "CR_self_knife", "CR_self_other_weapon" , "CR_other_gun", "CR_seen_other_gun", "CR_gang")]
+
+```
+
+<br/>
+
+### 2.1 Analysis on School Crime vs. School's Environment
+
+##### **Data Preparation**
+First, values for the variables relating to school environment has been converted into more readable format for easier analysis. 
+``` {r School Environment Data Cleaning, echo = FALSE}
+# Extract independent variable relating to school environment 
+school_environment <- dplyr::select(school_crimes, matches("SC_"))
+
+# Change all variables to more readable format
+# Replace all numerical values representing "Residue", "Blank", "Missing Data", and "Out of Universe" as NA.
+
+# SCS215 - SCHOOL TYPE 
+school_environment$SC_public_private[school_environment$SC_public_private == 1] <- "Public"
+school_environment$SC_public_private[school_environment$SC_public_private == 2] <- "Private"
+school_environment$SC_public_private[school_environment$SC_public_private == 8 | school_environment$SC_public_private == 98 | school_environment$SC_public_private == 99 | school_environment$SC_public_private == 9] <- NA
+
+# VS0021 - Q5C. IS YOUR SCHOOL AFFILIATED WITH A RELIGION? 
+school_environment$SC_religious[school_environment$SC_religious == 1] <- "Yes"
+school_environment$SC_religious[school_environment$SC_religious == 2] <- "No"
+school_environment$SC_religious[school_environment$SC_religious == 3] <- "Don't know"
+school_environment$SC_religious[school_environment$SC_religious == 8 | school_environment$SC_religious == 98 | school_environment$SC_religious == 9] <- NA
+
+# SCS214 - SCHOOL REGION 
+school_environment$SC_region[school_environment$SC_region == 1] <- "Northeast"
+school_environment$SC_region[school_environment$SC_region == 2] <- "Midwest"
+school_environment$SC_region[school_environment$SC_region == 3] <- "South"
+school_environment$SC_region[school_environment$SC_region == 4] <- "West"
+school_environment$SC_region[school_environment$SC_region == 5 | school_environment$SC_region == 8 | school_environment$SC_region == 9] <- NA
+
+# SCS216 - SCHOOL LOCALE 
+school_environment$SC_locale[school_environment$SC_locale == 1] <- "City"
+school_environment$SC_locale[school_environment$SC_locale == 2] <- "Suburb"
+school_environment$SC_locale[school_environment$SC_locale == 3] <- "Town"
+school_environment$SC_locale[school_environment$SC_locale == 4] <- "Rural"
+school_environment$SC_locale[school_environment$SC_locale == 5 | school_environment$SC_locale == 8 | school_environment$SC_locale == 9] <- NA
+
+# SCS217 - SCHOOL LEVEL 
+school_environment$SC_level[school_environment$SC_level == 1] <- "Primary"
+school_environment$SC_level[school_environment$SC_level == 2] <- "Middle"
+school_environment$SC_level[school_environment$SC_level == 3] <- "High"
+school_environment$SC_level[school_environment$SC_level == 4] <- "Other"
+school_environment$SC_level[school_environment$SC_level == 5 | school_environment$SC_level == 8 | school_environment$SC_level == 9] <- NA
+
+# SCS218 - SCHOOL ENROLLMENT SIZE 
+school_environment$SC_size[school_environment$SC_size == 1] <- "< 300"
+school_environment$SC_size[school_environment$SC_size == 2] <- "300 - 599"
+school_environment$SC_size[school_environment$SC_size == 3] <- "600 - 999"
+school_environment$SC_size[school_environment$SC_size == 4] <- "1000 - 1499"
+school_environment$SC_size[school_environment$SC_size == 5] <- "1500 - 1999"
+school_environment$SC_size[school_environment$SC_size == 6] <- "2000 <"
+school_environment$SC_size[school_environment$SC_size == 7 | school_environment$SC_size == 8 | school_environment$SC_size == 9] <- NA
+
+# SCS220 - PERCENT OF COMBINED AMERICAN INDIAN/ALASKA NATIVE, ASIAN, BLACK/AFRICAN AMERICAN, HISPANIC/LATINO, NATIVE HAWAIIAN/OTHER PACIFIC ISLANDER
+school_environment$SC_diversity[school_environment$SC_diversity == 1] <- "< 5%"
+school_environment$SC_diversity[school_environment$SC_diversity == 2] <- "5 - 20%"
+school_environment$SC_diversity[school_environment$SC_diversity == 3] <- "20 - 50%"
+school_environment$SC_diversity[school_environment$SC_diversity == 4] <- "50% <"
+school_environment$SC_diversity[school_environment$SC_diversity == 5 | school_environment$SC_diversity == 6 | school_environment$SC_diversity == 8 | school_environment$SC_diversity == 9] <- NA
+
+# SCS221 - PERCENT OF STUDENTS ELIGIBLE FOR FREE OR REDUCED-PRICE LUNCH 
+school_environment$SC_low_income[school_environment$SC_low_income == 1] <- "0 - 20%"
+school_environment$SC_low_income[school_environment$SC_low_income == 2] <- "20 - 50%"
+school_environment$SC_low_income[school_environment$SC_low_income == 3] <- "50% <"
+school_environment$SC_low_income[school_environment$SC_low_income == 4] <- "Private School"
+school_environment$SC_low_income[school_environment$SC_low_income == 5 | school_environment$SC_low_income == 6 | school_environment$SC_low_income == 8 | school_environment$SC_low_income == 9] <- NA
+
+```
+
+
+All criminal activity related variables, which will be dependent variables, have been combined into one "crimes" variable. These crimes variables cover crimes relevant to illegal substance, bullying, and violent crimes (i.e. weapons or gangs). If any of these variables' values is 1, representing "Yes", then "crimes" variable will be 1. All missing values have been replaced to 0 for easier analysis as well. 
+
+``` {r echo = FALSE}
+# consolidate into one "crime" variable
+crimes_environment <- dplyr:: bind_cols(school_environment, illegal_substance_crimes, bullying_crimes, violent_crime)
+crimes_environment$crimes <- ifelse(crimes_environment$CR_marijuana == 1 | crimes_environment$CR_alcohol == 1 | crimes_environment$CR_other_drugs == 1 | crimes_environment$CR_other_drugs == 1 | crimes_environment$CR_other_under_influence == 1| crimes_environment$CR_self_gun == 1 | crimes_environment$CR_self_knife == 1 | crimes_environment$CR_self_other_weapon == 1 | crimes_environment$CR_other_gun == 1 | crimes_environment$CR_seen_other_gun == 1 | crimes_environment$CR_gang == 1 | crimes_environment$CR_spread_rumor == 1 | crimes_environment$CR_verbal_insult == 1 | crimes_environment$CR_physical_bully == 1 | crimes_environment$CR_coerced == 1 | crimes_environment$CR_excluded == 1 | crimes_environment$CR_destroyed_your_property == 1, 1, 0) 
+crimes_environment$crimes[is.na(crimes_environment$crimes)] <- 0
+```
+1 - Yes, 2: No, other values are: "Refused", "Residue", "Missing Data"...
+
+<br/>
+
+##### **Statistical Data Analysis**
+Because the dataset is categorical variables, a logistic regression has been performed to identify the most significant predictor for crimes. 
+``` {r echo = FALSE}
+# create logistic regression 
+crimes_environment_lr <- crimes_environment
+crimes_environment_lr$crimes <- factor(crimes_environment_lr$crimes)
+crimes_environment_lr$SC_public_private <- factor(crimes_environment_lr$SC_public_private)
+crimes_environment_lr$SC_religious <- factor(crimes_environment_lr$SC_religious)
+# add NA back to make regression possible, as this variable SC_religious does not contain enough factors
+crimes_environment_lr$SC_religious <- addNA(crimes_environment_lr$SC_religious) 
+crimes_environment_lr$SC_region <- factor(crimes_environment_lr$SC_region)
+crimes_environment_lr$SC_locale <- factor(crimes_environment_lr$SC_locale)
+crimes_environment_lr$SC_level <- factor(crimes_environment_lr$SC_level)
+crimes_environment_lr$SC_size <- factor(crimes_environment_lr$SC_size)
+crimes_environment_lr$SC_diversity <- factor(crimes_environment_lr$SC_diversity)
+crimes_environment_lr$SC_low_income <- factor(crimes_environment_lr$SC_low_income)
+
+# create regression
+c_regression <- glm(crimes ~ SC_public_private + SC_religious + SC_region + SC_locale + SC_level + SC_size + SC_diversity + SC_low_income, data = crimes_environment_lr, family = "binomial")
+summary(c_regression)
+```
+
+To predict the binary dependent variable - crimes, the logistic regression indicates that the variables that are statistically significant at 0.05 confidence level is SC_level and SC_diversity. Although SC_regionSouth, SC_localeTown, and SC_size1500 - 1999 also indicate less than 0.05 confidence level, these are only one option of the categorical options. The SC_region, SC_locale, and SC_size variables as a whole are not as statistically significant across all options. 
+
+Therefore, a further exploratory data analysis was performed on SC_level, which represent school level (e.g. High school, middle school), and SC_diversity, percentage of minority race, with relation to crime rate. 
+
+<br/>
+
+##### **Exploratory Data Analysis**
+
+```{r echo = FALSE}
+environment_crimes <- plyr::ddply(crimes_environment, ~SC_level+SC_diversity, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/ length(SC_level)) # extract data 
+environment_crimes <- na.omit(environment_crimes) # exclude NA values 
+
+ggplot(data = environment_crimes, aes(x = SC_diversity, y = crimes_rate, fill = SC_level)) + geom_bar(stat = 'identity') + facet_grid(,vars(SC_level)) + guides(fill = "none") + xlab("Diversity Percentage") + ylab("Crime Rate (%)") + ggtitle("Crime Percentage by Diversity and School Level") + theme(axis.text=element_text(size = 5),axis.title=element_text(size=7,face="bold")) 
+
+```
+
+A bar graph of crime percentage by diversity and school level indicate that high school has the highest crime rate, while primary school has the lowest crime rate. Also, diversity does not seem to have a relationship with crime rates. For easier view, school level and diversity was separately analyzed with their relationship to crime rate: 
+
+
+```{r echo = FALSE}
+# school diversity and crime rate
+school_diversity_crimes <- plyr::ddply(crimes_environment, ~SC_diversity, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/ length(SC_size))
+school_diversity_crimes <- na.omit(school_diversity_crimes) # extract data
+ggplot(data = school_diversity_crimes, aes(x = SC_diversity, y = crimes_rate)) + geom_bar(stat = 'identity') + ylab("Crimes Rate (%)") + xlab("School Diversity Percentage") + ggtitle("School Diversity  and Crime Rate") + theme(plot.title = element_text(size = 15), axis.text=element_text(size=9),axis.title=element_text(size=9,face="bold")) # create graph
+
+# school level and crime rate
+school_level_crimes <- plyr::ddply(crimes_environment, ~SC_level, dplyr::summarize, crimes_rate = 100* (sum(crimes))/ length(SC_size))
+school_level_crimes <- na.omit(school_level_crimes) # extract data
+ggplot(data = school_level_crimes, aes(x = SC_level, y = crimes_rate)) + geom_bar(stat = 'identity') + ylab("Crimes Rate (%)") + xlab("School Level") + ggtitle("School Level and Crime Rate") + theme(plot.title = element_text(size = 15), axis.text=element_text(size=9),axis.title=element_text(size=9,face="bold")) # create graph
+
+```
+
+This suggest that out of school environmental variables, the level of the school is the most statistically significant and biggest factor on crime rate. Although school diversity does have statistical significance on school crime rate, it does not have notable difference and relationship with crime rate. On the other hand, regarding school level, crime rate is highest in high school and lowest in primary school. High school has reported over 50% of respondents having observed some sort of criminal activities at school. 
+
+<br/>
+
+### 2.2 Analysis on School Crime vs. School Policies to Ensure Student Safety
+
+##### **Data Preparation**
+Values for the variables relating to school policies has been converted into more readable format for easier analysis. 
+
+```{r School Policy Data Cleaning, echo = FALSE}
+# Extract independent variable relating to school policy 
+school_policy <- dplyr::select(school_crimes, matches("SCP_"))
+
+# Change variables to more readable format
+# Replace all numerical values representing "Residue", "Blank", "Missing Data", and "Out of Universe" as NA.
+
+# VS0036 - Q10A. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? SECURITY GUARDS OR ASSIGNED POLICE OFFICERS?
+school_policy$SCP_guards[school_policy$SCP_guards == 1] <- "Yes"
+school_policy$SCP_guards[school_policy$SCP_guards == 2] <- "No"
+school_policy$SCP_guards[school_policy$SCP_guards == 3] <- "Don't know"
+school_policy$SCP_guards[school_policy$SCP_guards == 8 | school_policy$SCP_guards == 98 | school_policy$SCP_guards == 99 | school_policy$SCP_guards == 9] <- NA
+
+# VS0038 - Q10C. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? METAL DETECTORS, INCLUDING WANDS?
+school_policy$SCP_metal_detector[school_policy$SCP_metal_detector == 1] <- "Yes"
+school_policy$SCP_metal_detector[school_policy$SCP_metal_detector == 2] <- "No"
+school_policy$SCP_metal_detector[school_policy$SCP_metal_detector == 3] <- "Don't know"
+school_policy$SCP_metal_detector[school_policy$SCP_metal_detector == 8 | school_policy$SCP_metal_detector == 98 | school_policy$SCP_metal_detector == 99 | school_policy$SCP_metal_detector == 9] <- NA
+
+#VS0040 - Q10E. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? A REQUIREMENT THAT VISITORS SIGN IN?
+school_policy$SCP_visitor_sign[school_policy$SCP_visitor_sign == 1] <- "Yes"
+school_policy$SCP_visitor_sign[school_policy$SCP_visitor_sign == 2] <- "No"
+school_policy$SCP_visitor_sign[school_policy$SCP_visitor_sign == 3] <- "Don't know"
+school_policy$SCP_visitor_sign[school_policy$SCP_visitor_sign == 8 | school_policy$SCP_visitor_sign == 98 | school_policy$SCP_visitor_sign == 99 | school_policy$SCP_visitor_sign == 9] <- NA
+
+#VS0041 - Q10F. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? LOCKER CHECKS?
+school_policy$SCP_locker_checks[school_policy$SCP_locker_checks == 1] <- "Yes"
+school_policy$SCP_locker_checks[school_policy$SCP_locker_checks == 2] <- "No"
+school_policy$SCP_locker_checks[school_policy$SCP_locker_checks == 3] <- "Don't know"
+school_policy$SCP_locker_checks[school_policy$SCP_locker_checks == 4] <- "School does not have lockers"
+school_policy$SCP_locker_checks[school_policy$SCP_locker_checks == 8 | school_policy$SCP_locker_checks == 98 | school_policy$SCP_locker_checks == 99 | school_policy$SCP_locker_checks == 9] <- NA
+
+# VS0042 - Q10G. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? A REQUIREMENT THAT STUDENTS WEAR BADGES OR PICTURE IDENTIFICATION?
+school_policy$SCP_badge[school_policy$SCP_badge == 1] <- "Yes"
+school_policy$SCP_badge[school_policy$SCP_badge == 2] <- "No"
+school_policy$SCP_badge[school_policy$SCP_badge == 3] <- "Don't know"
+school_policy$SCP_badge[school_policy$SCP_badge == 8 | school_policy$SCP_badge == 98 | school_policy$SCP_badge == 99 | school_policy$SCP_badge == 9] <- NA
+
+# VS0043 - Q10H. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? ONE OR MORE SECURITY CAMERAS TO MONITOR THE SCHOOL?
+school_policy$SCP_security_camera[school_policy$SCP_security_camera == 1] <- "Yes"
+school_policy$SCP_security_camera[school_policy$SCP_security_camera == 2] <- "No"
+school_policy$SCP_security_camera[school_policy$SCP_security_camera == 3] <- "Don't know"
+school_policy$SCP_security_camera[school_policy$SCP_security_camera == 8 | school_policy$SCP_security_camera == 98 | school_policy$SCP_security_camera == 99 | school_policy$SCP_security_camera == 9] <- NA
+
+# VS0044 - Q10I. DOES YOUR SCHOOL TAKE ANY MEASURES TO MAKE SURE STUDENTS ARE SAFE? A CODE OF STUDENT CONDUCT?
+school_policy$SCP_code_of_conduct[school_policy$SCP_code_of_conduct == 1] <- "Yes"
+school_policy$SCP_code_of_conduct[school_policy$SCP_code_of_conduct == 2] <- "No"
+school_policy$SCP_code_of_conduct[school_policy$SCP_code_of_conduct == 3] <- "Don't know"
+school_policy$SCP_code_of_conduct[school_policy$SCP_code_of_conduct == 8 | school_policy$SCP_code_of_conduct == 98 | school_policy$SCP_code_of_conduct == 99 | school_policy$SCP_code_of_conduct == 9] <- NA
+
+# VS0045 - Q11. IF YOU HEAR ABOUT A THREAT TO SCHOOL OR STUDENT SAFETY, DO YOU HAVE A WAY TO REPORT IT TO SOMEONE IN AUTHORITY WITHOUT GIVING YOUR NAME?
+school_policy$SCP_anonymous_report[school_policy$SCP_anonymous_report == 1] <- "Yes"
+school_policy$SCP_anonymous_report[school_policy$SCP_anonymous_report == 2] <- "No"
+school_policy$SCP_anonymous_report[school_policy$SCP_anonymous_report == 3] <- "Don't know"
+school_policy$SCP_anonymous_report[school_policy$SCP_anonymous_report == 8 | school_policy$SCP_anonymous_report == 98 | school_policy$SCP_anonymous_report == 99 | school_policy$SCP_anonymous_report == 9] <- NA
+
+#VS0049 - Q13A. WOULD YOU AGREE: THE SCHOOL RULES ARE FAIR
+school_policy$SCP_fair[school_policy$SCP_fair == 1] <- "Strongly Agree"
+school_policy$SCP_fair[school_policy$SCP_fair == 2] <- "Agree"
+school_policy$SCP_fair[school_policy$SCP_fair == 3] <- "Disagree"
+school_policy$SCP_fair[school_policy$SCP_fair == 4] <- "Strongly Disagree"
+school_policy$SCP_fair[school_policy$SCP_fair == 8 | school_policy$SCP_fair == 98 | school_policy$SCP_fair == 99 | school_policy$SCP_fair == 9] <- NA
+
+#Q13C. WOULD YOU AGREE: THE SCHOOL RULES ARE STRICTLY ENFORCED
+school_policy$SCP_enforced[school_policy$SCP_enforced == 1] <- "Strongly Agree"
+school_policy$SCP_enforced[school_policy$SCP_enforced == 2] <- "Agree"
+school_policy$SCP_enforced[school_policy$SCP_enforced == 3] <- "Disagree"
+school_policy$SCP_enforced[school_policy$SCP_enforced == 4] <- "Strongly Disagree"
+school_policy$SCP_enforced[school_policy$SCP_enforced == 8 | school_policy$SCP_enforced == 98 | school_policy$SCP_enforced == 99 | school_policy$SCP_enforced == 9] <- NA
+
+# VS0052 - Q13D. WOULD YOU AGREE: IF A SCHOOL RULE IS BROKEN, STUDENTS KNOW WHAT KIND OF PUNISHMENT WILL FOLLOW
+school_policy$SCP_clear_punishment[school_policy$SCP_clear_punishment == 1] <- "Strongly Agree"
+school_policy$SCP_clear_punishment[school_policy$SCP_clear_punishment == 2] <- "Agree"
+school_policy$SCP_clear_punishment[school_policy$SCP_clear_punishment == 3] <- "Disagree"
+school_policy$SCP_clear_punishment[school_policy$SCP_clear_punishment == 4] <- "Strongly Disagree"
+school_policy$SCP_clear_punishment[school_policy$SCP_clear_punishment == 8 | school_policy$SCP_clear_punishment == 98 | school_policy$SCP_clear_punishment == 99 | school_policy$SCP_clear_punishment == 9] <- NA
+
+#VS0053 - Q13E. WOULD YOU AGREE: TEACHERS TREAT STUDENTS WITH RESPECT
+school_policy$SCP_teacher_respect[school_policy$SCP_teacher_respect == 1] <- "Strongly Agree"
+school_policy$SCP_teacher_respect[school_policy$SCP_teacher_respect == 2] <- "Agree"
+school_policy$SCP_teacher_respect[school_policy$SCP_teacher_respect == 3] <- "Disagree"
+school_policy$SCP_teacher_respect[school_policy$SCP_teacher_respect == 4] <- "Strongly Disagree"
+school_policy$SCP_teacher_respect[school_policy$SCP_teacher_respect == 8 | school_policy$SCP_teacher_respect == 98 | school_policy$SCP_teacher_respect == 99 | school_policy$SCP_teacher_respect == 9] <- NA
+
+#VS0088 - Q29. WAS A TEACHER OR SOME OTHER ADULT AT SCHOOL NOTIFIED ABOUT THIS BULLYING?
+school_policy$SCP_bullying_teacher[school_policy$SCP_bullying_teacher == 1] <- "Yes"
+school_policy$SCP_bullying_teacher[school_policy$SCP_bullying_teacher == 2] <- "No"
+school_policy$SCP_bullying_teacher[school_policy$SCP_bullying_teacher == 8 | school_policy$SCP_bullying_teacher == 98 | school_policy$SCP_bullying_teacher == 99 | school_policy$SCP_bullying_teacher == 9] <- NA
+
+#VS0132 - Q40. COULD YOU HAVE GOTTEN A LOADED GUN WITHOUT ADULT PERMISSION, EITHER AT SCHOOL OR AWAY FROM SCHOOL?
+school_policy$SCP_gun_access[school_policy$SCP_gun_access == 1] <- "Yes"
+school_policy$SCP_gun_access[school_policy$SCP_gun_access == 2] <- "No"
+school_policy$SCP_gun_access[school_policy$SCP_gun_access == 8 | school_policy$SCP_gun_access == 98 | school_policy$SCP_gun_access == 99 | school_policy$SCP_gun_access == 9] <- NA
+
+```
+
+Again, all criminal activity related variables, which will be dependent variables, have been combined into one "crimes" variable. These crimes variables cover crimes relevant to illegal substance, bullying, and violent crimes (i.e. weapons or gangs). If any of these variables' values is 1, representing "Yes", then "crimes" variable will be 1. All missing values have been replaced to 0 for easier analysis as well.
+
+<br/>
+
+##### **Statistical Data Analysis**
+Because the dataset is categorical variables, a logistic regression has been performed to identify the most significant predictor for crimes.
+```{r echo = FALSE}
+# consolidate into one "crime" variable
+crimes_policy <- dplyr:: bind_cols(school_policy, illegal_substance_crimes, bullying_crimes, violent_crime)
+crimes_policy$crimes <- ifelse(crimes_policy$CR_marijuana == 1 | crimes_policy$CR_alcohol == 1 | crimes_policy$CR_other_drugs == 1 | crimes_policy$CR_other_drugs == 1 | crimes_policy$CR_other_under_influence == 1| crimes_policy$CR_self_gun == 1 | crimes_policy$CR_self_knife == 1 | crimes_policy$CR_self_other_weapon == 1 | crimes_policy$CR_other_gun == 1 | crimes_policy$CR_seen_other_gun == 1 | crimes_policy$CR_gang == 1 | crimes_policy$CR_spread_rumor == 1 | crimes_policy$CR_verbal_insult == 1 | crimes_policy$CR_physical_bully == 1 | crimes_policy$CR_coerced == 1 | crimes_policy$CR_excluded == 1 | crimes_policy$CR_destroyed_your_property == 1, 1, 0) 
+crimes_policy$crimes[is.na(crimes_policy$crimes)] <- 0
+
+# factor variables
+crimes_policy_lr <- crimes_policy
+crimes_policy_lr$crimes <- factor(crimes_policy_lr$crimes)
+crimes_policy_lr$SCP_guards <- factor(crimes_policy_lr$SCP_guards)
+crimes_policy_lr$SCP_metal_detector <- factor(crimes_policy_lr$SCP_metal_detector)
+crimes_policy_lr$SCP_visitor_sign <- factor(crimes_policy_lr$SCP_visitor_sign)
+crimes_policy_lr$SCP_locker_checks <- factor(crimes_policy_lr$SCP_locker_checks)
+crimes_policy_lr$SCP_badge <- factor(crimes_policy_lr$SCP_badge)
+crimes_policy_lr$SCP_security_camera <- factor(crimes_policy_lr$SCP_security_camera)
+crimes_policy_lr$SCP_anonymous_report <- factor(crimes_policy_lr$SCP_anonymous_report)
+crimes_policy_lr$SCP_fair <- factor(crimes_policy_lr$SCP_fair)
+crimes_policy_lr$SCP_enforced <- factor(crimes_policy_lr$SCP_enforced)
+crimes_policy_lr$SCP_clear_punishment <- factor(crimes_policy_lr$SCP_clear_punishment)
+crimes_policy_lr$SCP_teacher_respect <- factor(crimes_policy_lr$SCP_teacher_respect)
+crimes_policy_lr$SCP_bullying_teacher <- factor(crimes_policy_lr$SCP_bullying_teacher)
+crimes_policy_lr$SCP_gun_access <- factor(crimes_policy_lr$SCP_gun_access)
+
+# create regression
+policy_regression <- glm(crimes ~ SCP_guards + SCP_metal_detector + SCP_visitor_sign + SCP_locker_checks + SCP_badge + SCP_security_camera + SCP_code_of_conduct + SCP_anonymous_report + SCP_fair + SCP_enforced + SCP_clear_punishment + SCP_teacher_respect + SCP_bullying_teacher + SCP_gun_access, data = crimes_policy_lr, family = "binomial")
+summary(policy_regression)
+```
+
+The variables related to school policies all had low statistical significance, higher than confidence level of 0.05. But out of those, badge and anonymous report are relatively statistically significant. Therefore, further exploratory data analysis was performed on these variables to ensure that these two variables indeed do not have relationship with criminal activities at school. Exploratory data analysis was performed on badge, which represent whether school requires students to wear badges or picture identification, and anonymous report, which represent whether there is a way for anonymous report about a school crime or threat. 
+
+<br/>
+
+##### **Exploratory Data Analysis**
+
+```{r echo = FALSE}
+# relationship between requirement of badge and crimes rate
+badge_crimes <- plyr::ddply(crimes_policy, ~SCP_badge, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(SCP_badge))
+badge_crimes <- na.omit(badge_crimes)
+ggplot(data = badge_crimes, aes(x = SCP_badge, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab("Does your school require students to wear badges or picture identification?") + ylab("Crimes Rate (%)") + ggtitle("Badge Requirement and Crimes Rate") + theme(plot.title = element_text(size = 15), axis.text=element_text(size=9),axis.title=element_text(size=9,face="bold")) 
+```
+
+There does not seem to be a relationship between crimes rate and whether school requires students to wear badges or picture identification. The crimes rate do not differ much on whether the school requires students to wear badges/picture identification or not. 
+
+```{r echo = FALSE}
+# relationship between availability of anonymous report and school crimes
+anonymous_crimes <- plyr::ddply(crimes_policy, ~SCP_anonymous_report, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(SCP_anonymous_report))
+anonymous_crimes <- na.omit(anonymous_crimes)
+ggplot(data = anonymous_crimes, aes(x = SCP_anonymous_report, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("If you hear about a threat to school or student safety, do you have a way to report it to someone in authority without giving your name?", width = 100)) + ylab("Crimes Rate (%)") + ggtitle("Anonymous Report Availability and Crimes Rate") + theme(plot.title = element_text(size = 15), axis.text=element_text(size=9),axis.title=element_text(size=9,face="bold"))  
+```
+
+Furthermore, there does not seem to be a relationship between crimes rate and whether school provides a means for anonymous reporting. The crimes rate do not differe much on whether the school has a way for anonymous reporting. 
+<br/>
+All variables related to school policies did not have statistical significance and even those with relatively higher statistical significance do not seem to have relationship with school crimes rate. Therefore, school policy is not a significant factor for school crimes in this dataset. 
+
+<br/>
+
+### 2.3 Analysis on School Crime vs. Student Characteristics
+
+##### **Data Preparation**
+
+```{r Student Characteristics Data Cleaning, echo = FALSE}
+# Extract independent variable relating to student characteristics
+school_student <- dplyr::select(school_crimes, matches("ST_"))
+
+# Change variables to more readable format
+# Replace all numerical values representing "Residue", "Blank", "Missing Data", and "Out of Universe" as NA.
+
+# V3023A - RACE
+school_student$ST_race[school_student$ST_race == 1] <- "White only"
+school_student$ST_race[school_student$ST_race == 2] <- "Black only"
+school_student$ST_race[school_student$ST_race == 3] <- "Am Ind/AK native only"
+school_student$ST_race[school_student$ST_race == 4] <- "Asian only"
+school_student$ST_race[school_student$ST_race == 5] <- "Hawaiian/Pacific IS only"
+school_student$ST_race[school_student$ST_race == 6] <- "White-Black"
+school_student$ST_race[school_student$ST_race == 7] <- "White-Amer Ind"
+school_student$ST_race[school_student$ST_race == 8] <- "White-Asian"
+school_student$ST_race[school_student$ST_race == 9] <- "White-Hawaiian"
+school_student$ST_race[school_student$ST_race == 10] <- "Black-Amer Ind"
+school_student$ST_race[school_student$ST_race == 11] <- "Black-Asian"
+school_student$ST_race[school_student$ST_race == 12] <- "Black-Hawaiian/Pacific IIs"
+school_student$ST_race[school_student$ST_race == 13] <- "American Indian-Asian"
+school_student$ST_race[school_student$ST_race == 14] <- "Asian-Hawaiian/Pacific IIS"
+school_student$ST_race[school_student$ST_race == 15] <- "White-Black-American Ind"
+school_student$ST_race[school_student$ST_race == 16] <- "White-Black-Asian"
+school_student$ST_race[school_student$ST_race == 17] <- "White-Amer Ind-Asian"
+school_student$ST_race[school_student$ST_race == 18] <- "White-Asian-Hawaiian"
+school_student$ST_race[school_student$ST_race == 19] <- "2 or 3 races"
+school_student$ST_race[school_student$ST_race == 20] <- "4 or 5 races"
+school_student$ST_race[school_student$ST_race == 98] <- NA
+
+# V3083 - CITIZENSHIP STATUS (START 2017 Q1)
+school_student$ST_citizenship[school_student$ST_citizenship == 1] <- "Yes, born in the United States"
+school_student$ST_citizenship[school_student$ST_citizenship == 2] <- "Yes, born in Puerto Rico, Guam, the U.S. Virgin Islands, or Northern Marianas"
+school_student$ST_citizenship[school_student$ST_citizenship == 3] <- "Yes, born abroad of U.S. citizen parent or parents"
+school_student$ST_citizenship[school_student$ST_citizenship == 4] <- "Yes, citizen by naturalization"
+school_student$ST_citizenship[school_student$ST_citizenship == 5] <- "No, not a citizen"
+school_student$ST_citizenship[school_student$ST_citizenship == 8 | school_student$ST_citizenship == 9] <- NA
+
+#V3084 - SEXUAL ORIENTATION (START 2017 Q1)
+school_student$ST_sexual_orientation[school_student$ST_sexual_orientation == 1] <- "Lesbian or gay"
+school_student$ST_sexual_orientation[school_student$ST_sexual_orientation == 2] <- "Straight"
+school_student$ST_sexual_orientation[school_student$ST_sexual_orientation == 3] <- "Bisexual"
+school_student$ST_sexual_orientation[school_student$ST_sexual_orientation == 4] <- "Something else"
+school_student$ST_sexual_orientation[school_student$ST_sexual_orientation == 5] <- "I don't know the answer"
+school_student$ST_sexual_orientation[school_student$ST_sexual_orientation == 6 | school_student$ST_sexual_orientation == 8 | school_student$ST_sexual_orientation == 9] <- NA
+
+# V3085 - GENDER IDENTITY AT BIRTH (START 2017 Q1)
+school_student$ST_gender[school_student$ST_gender == 1] <- "Male"
+school_student$ST_gender[school_student$ST_gender == 2] <- "Female"
+school_student$ST_gender[school_student$ST_gender == 3] <- "Refused"
+school_student$ST_gender[school_student$ST_gender == 4] <- "Don't know"
+school_student$ST_gender[school_student$ST_gender == 8 | school_student$ST_gender == 9] <- NA
+
+#V3086 - CURRENT GENDER IDENTITY (START 2017 Q1)
+school_student$ST_cur_gender[school_student$ST_cur_gender == 1] <- "Male"
+school_student$ST_cur_gender[school_student$ST_cur_gender == 2] <- "Female"
+school_student$ST_cur_gender[school_student$ST_cur_gender == 3] <- "Transgender"
+school_student$ST_cur_gender[school_student$ST_cur_gender == 4] <- "None of these"
+school_student$ST_cur_gender[school_student$ST_cur_gender == 8 | school_student$ST_cur_gender == 9] <- NA
+
+# VS0030 - Q9B. DURING THIS SCHOOL YEAR, HAVE YOU PARTICIPATED IN ANY OF THE FOLLOWING ACTIVITIES: SPIRIT GROUPS
+school_student$ST_spirit_group[school_student$ST_spirit_group == 1] <- "Yes"
+school_student$ST_spirit_group[school_student$ST_spirit_group == 2] <- "No"
+school_student$ST_spirit_group[school_student$ST_spirit_group == 8 | school_student$ST_spirit_group == 98 | school_student$ST_spirit_group == 99 |school_student$ST_spirit_group == 9] <- NA
+
+#VS0031 - Q9C. DURING THIS SCHOOL YEAR, HAVE YOU PARTICIPATED IN ANY OF THE FOLLOWING ACTIVITIES: PERFORMING ARTS
+school_student$ST_performing_arts[school_student$ST_performing_arts == 1] <- "Yes"
+school_student$ST_performing_arts[school_student$ST_performing_arts == 2] <- "No"
+school_student$ST_performing_arts[school_student$ST_performing_arts == 8 | school_student$ST_performing_arts == 98 | school_student$ST_performing_arts == 99 |school_student$ST_performing_arts == 9] <- NA
+
+# VS0032 - Q9D. DURING THIS SCHOOL YEAR, HAVE YOU PARTICIPATED IN ANY OF THE FOLLOWING ACTIVITIES: ACADEMIC CLUBS
+school_student$ST_academic_club[school_student$ST_academic_club == 1] <- "Yes"
+school_student$ST_academic_club[school_student$ST_academic_club == 2] <- "No"
+school_student$ST_academic_club[school_student$ST_academic_club == 8 | school_student$ST_academic_club == 98 | school_student$ST_academic_club == 99 |school_student$ST_academic_club == 9] <- NA
+
+# VS0033 - Q9E. DURING THIS SCHOOL YEAR, HAVE YOU PARTICIPATED IN ANY OF THE FOLLOWING ACTIVITIES: STUDENT GOVERNMENT
+school_student$ST_stugov[school_student$ST_stugov == 1] <- "Yes"
+school_student$ST_stugov[school_student$ST_stugov == 2] <- "No"
+school_student$ST_stugov[school_student$ST_stugov == 8 | school_student$ST_stugov == 98 | school_student$ST_stugov == 99 |school_student$ST_stugov == 9] <- NA
+
+#  VS0034 - Q9F. DURING THIS SCHOOL YEAR, HAVE YOU PARTICIPATED IN ANY OF THE FOLLOWING ACTIVITIES: COMMUNITY SERVICE/VOLUNTEER CLUBS
+school_student$ST_community_volunteer[school_student$ST_community_volunteer == 1] <- "Yes"
+school_student$ST_community_volunteer[school_student$ST_community_volunteer == 2] <- "No"
+school_student$ST_community_volunteer[school_student$ST_community_volunteer == 8 | school_student$ST_community_volunteer == 98 | school_student$ST_community_volunteer == 99 |school_student$ST_community_volunteer == 9] <- NA
+
+# VS0035 - Q9G. DURING THIS SCHOOL YEAR, HAVE YOU PARTICIPATED IN ANY OF THE FOLLOWING ACTIVITIES: OTHER SCHOOL CLUBS OR SCHOOL ACTIVITIES
+school_student$ST_other_club[school_student$ST_other_club == 1] <- "Yes"
+school_student$ST_other_club[school_student$ST_other_club == 2] <- "No"
+school_student$ST_other_club[school_student$ST_other_club == 8 | school_student$ST_other_club == 98 | school_student$ST_other_club == 99 |school_student$ST_other_club == 9] <- NA
+
+# SCS200 - Q31A. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO YOUR RACE?
+school_student$ST_bullying_race[school_student$ST_bullying_race == 1] <- "Yes"
+school_student$ST_bullying_race[school_student$ST_bullying_race == 2] <- "No"
+school_student$ST_bullying_race[school_student$ST_bullying_race == 8 | school_student$ST_bullying_race == 98 | school_student$ST_bullying_race == 99 |school_student$ST_bullying_race == 9] <- NA
+
+# SCS201 - Q31B. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO YOUR RELIGION?
+school_student$ST_bullying_religion[school_student$ST_bullying_religion == 1] <- "Yes"
+school_student$ST_bullying_religion[school_student$ST_bullying_religion == 2] <- "No"
+school_student$ST_bullying_religion[school_student$ST_bullying_religion == 8 | school_student$ST_bullying_religion == 98 | school_student$ST_bullying_religion == 99 |school_student$ST_bullying_religion == 9] <- NA
+
+#  SCS202 - Q31C. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO: YOUR ETHNIC BACKGROUND OR NATIONAL ORIGIN. FOR EXAMPLE, PEOPLE OF HISPANIC ORIGIN?
+school_student$ST_bullying_ethnicity[school_student$ST_bullying_ethnicity == 1] <- "Yes"
+school_student$ST_bullying_ethnicity[school_student$ST_bullying_ethnicity == 2] <- "No"
+school_student$ST_bullying_ethnicity[school_student$ST_bullying_ethnicity == 8 | school_student$ST_bullying_ethnicity == 98 | school_student$ST_bullying_ethnicity == 99 |school_student$ST_bullying_ethnicity == 9] <- NA
+
+# SCS203 - Q31D. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO: ANY DISABILITY YOU MAY HAVE - SUCH AS PHYSICAL, MENTAL, OR DEVELOPMENTAL DISABILITIES?
+school_student$ST_bullying_disability[school_student$ST_bullying_disability == 1] <- "Yes"
+school_student$ST_bullying_disability[school_student$ST_bullying_disability == 2] <- "No"
+school_student$ST_bullying_disability[school_student$ST_bullying_disability == 8 | school_student$ST_bullying_disability == 98 | school_student$ST_bullying_disability == 99 |school_student$ST_bullying_disability == 9] <- NA
+
+# SCS204 - Q31E. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO: YOUR GENDER?
+school_student$ST_bullying_gender[school_student$ST_bullying_gender == 1] <- "Yes"
+school_student$ST_bullying_gender[school_student$ST_bullying_gender == 2] <- "No"
+school_student$ST_bullying_gender[school_student$ST_bullying_gender == 8 | school_student$ST_bullying_gender == 98 | school_student$ST_bullying_gender == 99 |school_student$ST_bullying_gender == 9] <- NA
+
+#  SCS205 - Q31F. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO: YOUR SEXUAL ORIENTATION - BY THIS WE MEAN GAY, LESBIAN, BISEXUAL, OR STRAIGHT?
+school_student$ST_bullying_sexual_orientation[school_student$ST_bullying_sexual_orientation == 1] <- "Yes"
+school_student$ST_bullying_sexual_orientation[school_student$ST_bullying_sexual_orientation == 2] <- "No"
+school_student$ST_bullying_sexual_orientation[school_student$ST_bullying_sexual_orientation == 8 | school_student$ST_bullying_sexual_orientation == 98 | school_student$ST_bullying_sexual_orientation == 99 |school_student$ST_bullying_sexual_orientation == 9] <- NA
+
+# SCS206 - Q31G. WHEN YOU WERE BULLIED IN SCHOOL THIS YEAR, DID YOU EVER THINK IT WAS RELATED TO: YOUR PHYSICAL APPEARANCE?
+school_student$ST_bullying_appearance[school_student$ST_bullying_appearance == 1] <- "Yes"
+school_student$ST_bullying_appearance[school_student$ST_bullying_appearance == 2] <- "No"
+school_student$ST_bullying_appearance[school_student$ST_bullying_appearance == 8 | school_student$ST_bullying_appearance == 98 | school_student$ST_bullying_appearance == 99 |school_student$ST_bullying_appearance == 9] <- NA
+
+# VS0138 - Q42. DURING THIS SCHOOL YEAR, ACROSS ALL SUBJECTS HAVE YOU GOTTEN MOSTLY -
+school_student$ST_grades[school_student$ST_grades == 1] <- "A's"
+school_student$ST_grades[school_student$ST_grades == 2] <- "B's"
+school_student$ST_grades[school_student$ST_grades == 3] <- "C's"
+school_student$ST_grades[school_student$ST_grades == 4] <- "D's"
+school_student$ST_grades[school_student$ST_grades == 5] <- "F's"
+school_student$ST_grades[school_student$ST_grades == 6 |  school_student$ST_grades == 8 | school_student$ST_grades == 98 | school_student$ST_grades == 99 |school_student$ST_grades == 9] <- NA
+
+```
+
+<br/>
+
+##### **Statistical Data Analysis**
+
+```{r tidy=TRUE, tidy.opts=list(width.cutoff=60), echo = FALSE}
+# consolidate into one "crimes" variable
+crimes_student <- dplyr:: bind_cols(school_student, illegal_substance_crimes, bullying_crimes, violent_crime)
+crimes_student$crimes <- ifelse(crimes_student$CR_marijuana == 1 | crimes_student$CR_alcohol == 1 | crimes_student$CR_other_drugs == 1 | crimes_student$CR_other_drugs == 1 | crimes_student$CR_other_under_influence == 1| crimes_student$CR_self_gun == 1 | crimes_student$CR_self_knife == 1 | crimes_student$CR_self_other_weapon == 1 | crimes_student$CR_other_gun == 1 | crimes_student$CR_seen_other_gun == 1 | crimes_student$CR_gang == 1 | crimes_student$CR_spread_rumor == 1 | crimes_student$CR_verbal_insult == 1 | crimes_student$CR_physical_bully == 1 | crimes_student$CR_coerced == 1 | crimes_student$CR_excluded == 1 | crimes_student$CR_destroyed_your_property == 1, 1, 0) 
+crimes_student$crimes[is.na(crimes_student$crimes)] <- 0
+
+# factor variables
+crimes_student_lr <- crimes_student
+crimes_student_lr$crimes <- factor(crimes_student_lr$crimes)
+crimes_student_lr$ST_race <- factor(crimes_student_lr$ST_race)
+crimes_student_lr$ST_citizenship <- factor(crimes_student_lr$ST_citizenship)
+crimes_student_lr$ST_sexual_orientation <- factor(crimes_student_lr$ST_sexual_orientation)
+
+
+crimes_student_lr$ST_gender <- factor(crimes_student_lr$ST_gender)
+crimes_student_lr$ST_cur_gender <- factor(crimes_student_lr$ST_cur_gender)
+crimes_student_lr$ST_spirit_group <- factor(crimes_student_lr$ST_spirit_group)
+crimes_student_lr$ST_performing_arts <- factor(crimes_student_lr$ST_performing_arts)
+crimes_student_lr$ST_academic_club <- factor(crimes_student_lr$ST_academic_club)
+crimes_student_lr$ST_stugov <- factor(crimes_student_lr$ST_stugov)
+crimes_student_lr$ST_community_volunteer <- factor(crimes_student_lr$ST_community_volunteer)
+crimes_student_lr$ST_other_club <- factor(crimes_student_lr$ST_other_club)
+crimes_student_lr$ST_grades <- factor(crimes_student_lr$ST_grades)
+
+# create regression
+student_regression <- glm(crimes ~ ST_race + ST_citizenship + ST_sexual_orientation + ST_gender + ST_cur_gender + ST_spirit_group + ST_performing_arts + ST_academic_club + ST_stugov + ST_community_volunteer + ST_other_club + ST_grades, data = crimes_student_lr, family = "binomial", control = list(maxit = 30))
+summary(student_regression)
+
+```
+
+Although there were no variables that showed statistical significance across all categorical options, there were variables that showed relatively higher statistical significance across some options. The p values of the variables related to student characteristics indicate statistical significance lower than 0.05 confidence level for student grades, extracurricular participation (most specifically, ST_community_volunteerYES, ST_academic_clubYes, ST_performing_artsYes), and sexual orientation. Therefore, further exploratory data analysis on these variables have been performed. 
+
+<br/>
+
+##### **Exploratory  Data Analysis**
+
+
+``` {r echo = FALSE}
+theme_set(theme_cowplot(font_size=8))
+# extract data
+sexual_orientation_crimes <- na.omit(plyr::ddply(crimes_student, ~ ST_sexual_orientation, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_gender)))
+grades_crimes <- na.omit(plyr::ddply(crimes_student, ~ ST_grades, dplyr::summarize, crimes_rate = (sum(crimes))/length(ST_grades)))
+
+# plot relationship between students' sexual orientation and perception of crimes 
+sexual_orientation_plot <- ggplot(data = sexual_orientation_crimes, aes(x = str_wrap(ST_sexual_orientation), y = crimes_rate)) + geom_bar(stat = 'identity') + xlab("Sexual Orientation") + ylab("Crimes Rate (%)") + ggtitle("Sexual Orientation and Perception of Crimes") + scale_x_discrete(labels = wrap_format(10)) + theme(plot.title = element_text(size = 10), axis.text=element_text(size=8),axis.title=element_text(size=9,face="bold")) 
+
+# plot relationship between students' grades and perception of crimes 
+grades_plot <- ggplot(data = grades_crimes, aes(x = ST_grades, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, what grade have you gotten mostly across all subjects?", width = 60)) + ylab("Crimes Rate (%)") + ggtitle("Grades and Perception of Crimes") + theme(axis.title=element_text(face="bold")) 
+
+# combine the two plots
+plot_grid(sexual_orientation_plot, grades_plot) + theme(plot.title = element_text(size = 10), axis.text=element_text(size=8),axis.title=element_text(size=9,face="bold")) 
+
+```
+
+Students who identified their sexual orientation as straight seemed to perceive school crimes as lower than those that did not. Also, students who have reported to have gotten mostly F's seemed to perceive school crimes as higher than those who received other grades. A possible reason for this is that students who do not identify as straight could have been more likely to become victims of school crimes than those who did, and thus increasing their awareness of school crimes. Further, students who are involved with school crimes, either as inflictor or as victim, would have likely had their grades affected as well. 
+
+```{r echo = FALSE}
+# relationship between students' participation of extracurricular clubs and perception of crimes
+# extract data
+stugov_crimes <- na.omit(plyr::ddply(crimes_student, ~ST_stugov, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_stugov)))
+academic_crimes <- na.omit(plyr::ddply(crimes_student, ~ ST_academic_club, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_academic_club)))
+spirit_crimes <- na.omit(plyr::ddply(crimes_student, ~ST_spirit_group, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_spirit_group)))
+volunteer_crimes <- na.omit(plyr::ddply(crimes_student, ~ST_community_volunteer, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_community_volunteer)))
+performing_crimes <- na.omit(plyr::ddply(crimes_student, ~ST_performing_arts, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_performing_arts)))
+other_crimes <- na.omit(plyr::ddply(crimes_student, ~ST_other_club, dplyr::summarize, crimes_rate = 100 * (sum(crimes))/length(ST_other_club)))
+
+# plot data
+stugov_plot <- ggplot(data = stugov_crimes, aes(x = ST_stugov, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, have you participated in student government?", width = 40)) + ylab("Crimes Rate (%)") + theme(axis.title=element_text(face="bold"))
+academic_plot <- ggplot(data = academic_crimes, aes(x = ST_academic_club, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, have you participated in academic clubs?", width = 40)) + ylab("Crimes Rate (%)") + theme(axis.title=element_text(face="bold"))
+spirit_plot <- ggplot(data = spirit_crimes, aes(x = ST_spirit_group, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, have you participated in spirit group?", width = 40)) + ylab("Crimes Rate (%)") + theme(axis.title=element_text(face="bold"))
+community_plot <- ggplot(data = volunteer_crimes, aes(x = ST_community_volunteer, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, have you participated in community service/volunteer clubs?", width = 40)) + ylab("Crimes Rate (%)")+ theme(axis.title=element_text(face="bold"))
+performing_plot <- ggplot(data = performing_crimes, aes(x = ST_performing_arts, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, have you participated in performing arts?", width = 40)) + ylab("Crimes Rate (%)") + theme(axis.title=element_text(face="bold"))
+other_plot <- ggplot(data = other_crimes, aes(x = ST_other_club, y = crimes_rate)) + geom_bar(stat = 'identity') + xlab(str_wrap("During this school year, have you participated in other clubs?", width = 40)) + ylab("Crimes Rate (%)") + theme(axis.title=element_text(face="bold"))
+
+# combine the plots
+plot_grid(stugov_plot, academic_plot, spirit_plot, community_plot, performing_plot, other_plot)
+```
+
+The exploratory data analysis on students' participation of extracurricular activities indicate that those who participated in extracurricular clubs perceive school crimes rate as slightly higher than those who did not. A possible reason could be that students who participate in clubs have greater interaction with other students, which could have increased their awareness of school crimes. 
+
+<br/>
+
+## **3. Analysis on School Crime and Its Impact on Students**
+
+In this section, the school crime is independent variable and different impact that students received are dependent variables. It aims to analyze if existence of criminal activities at school have a significant impact on students in areas such as their self-perception of future prospects, mental health, and other personal influence. 
+
+```{r Data Cleaning, echo = FALSE}
+# Extract crime impact related data
+crime_impact <- dplyr::select(school_crimes, matches("I_"))
+
+# Change all variables to readable format 
+# Replace all numerical values representing "Residue", "Blank", "Missing Data", and "Out of Universe" as NA.
+
+# VS0046 - Q12. IN YOUR CLASSES, HOW OFTEN ARE YOU DISTRACTED FROM DOING YOUR SCHOOLWORK BECAUSE OTHER STUDENTS ARE MISBEHAVING? 
+crime_impact$I_schoolwork_distract[crime_impact$I_schoolwork_distract == 1] <- "Never"
+crime_impact$I_schoolwork_distract[crime_impact$I_schoolwork_distract == 2] <- "Almost Never"
+crime_impact$I_schoolwork_distract[crime_impact$I_schoolwork_distract == 3] <- "Sometimes"
+crime_impact$I_schoolwork_distract[crime_impact$I_schoolwork_distract == 4] <- "Most of the time"
+crime_impact$I_schoolwork_distract[crime_impact$I_schoolwork_distract == 8 | crime_impact$I_schoolwork_distract == 9 | crime_impact$I_schoolwork_distract == 98 | crime_impact$I_schoolwork_distract == 99] <- NA
+
+# VS0146 - Q14A. WOULD YOU AGREE THERE IS AN ADULT AT SCHOOL WHO... REALLY CARES ABOUT YOU
+crime_impact$I_adult_cares[crime_impact$I_adult_cares == 1] <- "Strongly Agree"
+crime_impact$I_adult_cares[crime_impact$I_adult_cares == 2] <- "Agree"
+crime_impact$I_adult_cares[crime_impact$I_adult_cares == 3] <- "Disagree"
+crime_impact$I_adult_cares[crime_impact$I_adult_cares == 4] <- "Strongly Disagree"
+crime_impact$I_adult_cares[crime_impact$I_adult_cares == 8 | crime_impact$I_adult_cares == 9 | crime_impact$I_adult_cares == 98 | crime_impact$I_adult_cares == 99] <- NA
+
+#  VS0148 - Q14B. WOULD YOU AGREE THERE IS AN ADULT AT SCHOOL WHO... LISTENS TO YOU WHEN YOU HAVE SOMETHING TO SAY.
+crime_impact$I_adult_listens[crime_impact$I_adult_listens == 1] <- "Strongly Agree"
+crime_impact$I_adult_listens[crime_impact$I_adult_listens == 2] <- "Agree"
+crime_impact$I_adult_listens[crime_impact$I_adult_listens == 3] <- "Disagree"
+crime_impact$I_adult_listens[crime_impact$I_adult_listens == 4] <- "Strongly Disagree"
+crime_impact$I_adult_listens[crime_impact$I_adult_listens == 8 | crime_impact$I_adult_listens == 9 | crime_impact$I_adult_listens == 98 | crime_impact$I_adult_listens == 99] <- NA
+
+# VS0149 - Q14C. WOULD YOU AGREE THERE IS AN ADULT AT SCHOOL WHO... TELLS YOU WHEN YOU DO A GOOD JOB.
+crime_impact$I_adult_compliments[crime_impact$I_adult_compliments == 1] <- "Strongly Agree"
+crime_impact$I_adult_compliments[crime_impact$I_adult_compliments == 2] <- "Agree"
+crime_impact$I_adult_compliments[crime_impact$I_adult_compliments == 3] <- "Disagree"
+crime_impact$I_adult_compliments[crime_impact$I_adult_compliments == 4] <- "Strongly Disagree"
+crime_impact$I_adult_compliments[crime_impact$I_adult_compliments == 8 | crime_impact$I_adult_compliments == 9 | crime_impact$I_adult_compliments == 98 | crime_impact$I_adult_compliments == 99] <- NA
+
+# SCS186 - Q15A. THERE IS A STUDENT AT SCHOOL WHO... REALLY CARES ABOUT YOU
+crime_impact$I_student_cares[crime_impact$I_student_cares == 1] <- "Strongly Agree"
+crime_impact$I_student_cares[crime_impact$I_student_cares == 2] <- "Agree"
+crime_impact$I_student_cares[crime_impact$I_student_cares == 3] <- "Disagree"
+crime_impact$I_student_cares[crime_impact$I_student_cares == 4] <- "Strongly Disagree"
+crime_impact$I_student_cares[crime_impact$I_student_cares == 8 | crime_impact$I_student_cares == 9 | crime_impact$I_student_cares == 98 | crime_impact$I_student_cares == 99] <- NA
+
+# SCS187 - Q15B. THERE IS A STUDENT AT SCHOOL WHO... LISTENS TO YOU WHEN YOU HAVE SOMETHING TO SAY
+crime_impact$I_student_listens[crime_impact$I_student_listens == 1] <- "Strongly Agree"
+crime_impact$I_student_listens[crime_impact$I_student_listens == 2] <- "Agree"
+crime_impact$I_student_listens[crime_impact$I_student_listens == 3] <- "Disagree"
+crime_impact$I_student_listens[crime_impact$I_student_listens == 4] <- "Strongly Disagree"
+crime_impact$I_student_listens[crime_impact$I_student_listens == 8 | crime_impact$I_student_listens == 9 | crime_impact$I_student_listens == 98 | crime_impact$I_student_listens == 99] <- NA
+
+# SCS188 - Q15C. THERE IS A STUDENT AT SCHOOL WHO... BELIEVES THAT YOU WILL BE A SUCCESS
+crime_impact$I_student_believes[crime_impact$I_student_believes == 1] <- "Strongly Agree"
+crime_impact$I_student_believes[crime_impact$I_student_believes == 2] <- "Agree"
+crime_impact$I_student_believes[crime_impact$I_student_believes == 3] <- "Disagree"
+crime_impact$I_student_believes[crime_impact$I_student_believes == 4] <- "Strongly Disagree"
+crime_impact$I_student_believes[crime_impact$I_student_believes == 8 | crime_impact$I_student_believes == 9 | crime_impact$I_student_believes == 98 | crime_impact$I_student_believes == 99] <- NA
+
+# SCS196 - Q30A. THIS SCHOOL YEAR, HOW MUCH HAS BULLYING HAD A NEGATIVE EFFECT ON: YOUR SCHOOL WORK
+crime_impact$I_bullying_schoolwork[crime_impact$I_bullying_schoolwork == 1] <- "Not at all"
+crime_impact$I_bullying_schoolwork[crime_impact$I_bullying_schoolwork == 2] <- "Not very much"
+crime_impact$I_bullying_schoolwork[crime_impact$I_bullying_schoolwork == 3] <- "Somewhat"
+crime_impact$I_bullying_schoolwork[crime_impact$I_bullying_schoolwork == 4] <- "A lot"
+crime_impact$I_bullying_schoolwork[crime_impact$I_bullying_schoolwork == 8 | crime_impact$I_bullying_schoolwork == 9 | crime_impact$I_bullying_schoolwork == 98 | crime_impact$I_bullying_schoolwork == 99] <- NA
+
+#  SCS197 - Q30B. THIS SCHOOL YEAR, HOW MUCH HAS BULLYING HAD A NEGATIVE EFFECT ON: YOUR RELATIONSHIPS WITH FRIENDS OR FAMILY
+crime_impact$I_bullying_relationship[crime_impact$I_bullying_relationship == 1] <- "Not at all"
+crime_impact$I_bullying_relationship[crime_impact$I_bullying_relationship == 2] <- "Not very much"
+crime_impact$I_bullying_relationship[crime_impact$I_bullying_relationship == 3] <- "Somewhat"
+crime_impact$I_bullying_relationship[crime_impact$I_bullying_relationship == 4] <- "A lot"
+crime_impact$I_bullying_relationship[crime_impact$I_bullying_relationship == 8 | crime_impact$I_bullying_relationship == 9 | crime_impact$I_bullying_relationship == 98 | crime_impact$I_bullying_relationship == 99] <- NA
+
+#  SCS198 - Q30C. THIS SCHOOL YEAR, HOW MUCH HAS BULLYING HAD A NEGATIVE EFFECT ON: HOW YOU FEEL ABOUT YOURSELF
+crime_impact$I_bullying_self_esteem[crime_impact$I_bullying_self_esteem == 1] <- "Not at all"
+crime_impact$I_bullying_self_esteem[crime_impact$I_bullying_self_esteem == 2] <- "Not very much"
+crime_impact$I_bullying_self_esteem[crime_impact$I_bullying_self_esteem == 3] <- "Somewhat"
+crime_impact$I_bullying_self_esteem[crime_impact$I_bullying_self_esteem == 4] <- "A lot"
+crime_impact$I_bullying_self_esteem[crime_impact$I_bullying_self_esteem == 8 | crime_impact$I_bullying_self_esteem == 9 | crime_impact$I_bullying_self_esteem == 98 | crime_impact$I_bullying_self_esteem == 99] <- NA
+
+#  SCS199 - Q30D. THIS SCHOOL YEAR, HOW MUCH HAS BULLYING HAD A NEGATIVE EFFECT ON: YOUR PHYSICAL HEALTH FOR EXAMPLE, CAUSED INJURIES, GAVE YOU HEADACHES OR STOMACH ACHES.
+crime_impact$I_bullying_health[crime_impact$I_bullying_health == 1] <- "Not at all"
+crime_impact$I_bullying_health[crime_impact$I_bullying_health == 2] <- "Not very much"
+crime_impact$I_bullying_health[crime_impact$I_bullying_health == 3] <- "Somewhat"
+crime_impact$I_bullying_health[crime_impact$I_bullying_health == 4] <- "A lot"
+crime_impact$I_bullying_health[crime_impact$I_bullying_health == 8 | crime_impact$I_bullying_health == 9 | crime_impact$I_bullying_health == 98 | crime_impact$I_bullying_health == 99] <- NA
+
+# VS0124 - Q37A. HOW OFTEN ARE YOU AFRAID THAT SOMEONE WILL ATTACK OR HARM YOU IN THE SCHOOL BUILDING/PROPERTY? 
+crime_impact$I_fear_school[crime_impact$I_fear_school == 1] <- "Never"
+crime_impact$I_fear_school[crime_impact$I_fear_school == 2] <- "Almost never"
+crime_impact$I_fear_school[crime_impact$I_fear_school == 3] <- "Sometimes"
+crime_impact$I_fear_school[crime_impact$I_fear_school == 4] <- "Most of the time"
+crime_impact$I_fear_school[crime_impact$I_fear_school == 8 | crime_impact$I_fear_school == 9 | crime_impact$I_fear_school == 98 | crime_impact$I_fear_school == 99] <- NA
+
+#  VS0125 - Q37B. HOW OFTEN ARE YOU AFRAID THAT SOMEONE WILL ATTACK OR HARM YOU ON A SCHOOL BUS OR ON THE WAY TO AND FROM SCHOOL?
+crime_impact$I_fear_bus[crime_impact$I_fear_bus == 1] <- "Never"
+crime_impact$I_fear_bus[crime_impact$I_fear_bus == 2] <- "Almost never"
+crime_impact$I_fear_bus[crime_impact$I_fear_bus == 3] <- "Sometimes"
+crime_impact$I_fear_bus[crime_impact$I_fear_bus == 4] <- "Most of the time"
+crime_impact$I_fear_bus[crime_impact$I_fear_bus == 8 | crime_impact$I_fear_bus == 9 | crime_impact$I_fear_bus == 98 | crime_impact$I_fear_bus == 99] <- NA
+
+# VS0126 - Q37C. BESIDES THE TIMES YOU ARE ON SCHOOL PROPERTY OR GOING TO OR FROM SCHOOL, HOW OFTEN ARE YOU AFRAID THAT SOMEONE WILL HARM YOU?
+crime_impact$I_fear_other[crime_impact$I_fear_other == 1] <- "Never"
+crime_impact$I_fear_other[crime_impact$I_fear_other == 2] <- "Almost never"
+crime_impact$I_fear_other[crime_impact$I_fear_other == 3] <- "Sometimes"
+crime_impact$I_fear_other[crime_impact$I_fear_other == 4] <- "Most of the time"
+crime_impact$I_fear_other[crime_impact$I_fear_other == 8 | crime_impact$I_fear_other == 9 | crime_impact$I_fear_other == 98 | crime_impact$I_fear_other == 99] <- NA
+
+#  VS0139 - Q44A. THINKING ABOUT THE FUTURE, DO YOU THINK YOU WILL: ATTEND SCHOOL AFTER HIGH SCHOOL, SUCH AS A COLLEGE OR TECHNICAL SCHOOL?
+crime_impact$I_school_after_graduation[crime_impact$I_school_after_graduation == 1] <- "Yes"
+crime_impact$I_school_after_graduation[crime_impact$I_school_after_graduation == 2] <- "No"
+crime_impact$I_school_after_graduation[crime_impact$I_school_after_graduation == 3] <- "Don't know"
+crime_impact$I_school_after_graduation[crime_impact$I_school_after_graduation == 8 | crime_impact$I_school_after_graduation == 9 | crime_impact$I_school_after_graduation == 98 | crime_impact$I_school_after_graduation == 99] <- NA
+
+# VS0140 - Q44B. THINKING ABOUT THE FUTURE, DO YOU THINK YOU WILL: GRADUATE FROM A 4-YEAR COLLEGE?
+crime_impact$I_college_graduate[crime_impact$I_college_graduate == 1] <- "Yes"
+crime_impact$I_college_graduate[crime_impact$I_college_graduate == 2] <- "No"
+crime_impact$I_college_graduate[crime_impact$I_college_graduate == 3] <- "Don't know"
+crime_impact$I_college_graduate[crime_impact$I_college_graduate == 8 | crime_impact$I_college_graduate == 9 | crime_impact$I_college_graduate == 98 | crime_impact$I_college_graduate == 99] <- NA
+
+```
+
+```{r echo = FALSE}
+# extract out relevant columns and combine all criminal activities into 1 column, "crimes". 
+# "crimes" will be 1 if any criminal activities such as illegal substance, bullying, and violent crimes exist, 0 otherwise.
+crime_impact_mod <- dplyr:: bind_cols(crime_impact, illegal_substance_crimes, bullying_crimes, violent_crime)
+crime_impact_mod$crimes <- ifelse(crime_impact_mod$CR_marijuana == 1 | crime_impact_mod$CR_alcohol == 1 | crime_impact_mod$CR_other_drugs == 1 | crime_impact_mod$CR_other_drugs == 1 | crime_impact_mod$CR_other_under_influence == 1| crime_impact_mod$CR_self_gun == 1 | crime_impact_mod$CR_self_knife == 1 | crime_impact_mod$CR_self_other_weapon == 1 | crime_impact_mod$CR_other_gun == 1 | crime_impact_mod$CR_seen_other_gun == 1 | crime_impact_mod$CR_gang == 1 | crime_impact_mod$CR_spread_rumor == 1 | crime_impact_mod$CR_verbal_insult == 1 | crime_impact_mod$CR_physical_bully == 1 | crime_impact_mod$CR_coerced == 1 | crime_impact_mod$CR_excluded == 1 | crime_impact_mod$CR_destroyed_your_property == 1, 1, 0) 
+crime_impact_mod$crimes[is.na(crime_impact_mod$crimes)] <- 0
+
+crime_impact_mod <- subset(crime_impact_mod, select = c("I_schoolwork_distract", "I_adult_cares", "I_adult_listens", "I_adult_compliments", "I_student_cares", "I_student_listens", "I_student_believes", "I_bullying_schoolwork", "I_bullying_relationship", "I_bullying_self_esteem", "I_bullying_health", "I_fear_school", "I_fear_bus", "I_fear_other", "I_school_after_graduation", "I_college_graduate", "crimes"))
+
+```
+
+<br/>
+
+The impact of school crimes have been grouped into 2 areas: impact on 1) their future prospects and 2) mental health. Only the data of students who responded to have observed any sort of criminal activities, have been extracted to see more clearly what the impacts are. Variables relevant to each areas have been extracted. 
+
+```{r echo = FALSE}
+future_impact <- na.omit(subset(crime_impact_mod, crimes == 1, select = c("I_school_after_graduation", "I_college_graduate")))
+
+mental_impact <- na.omit(subset(crime_impact_mod, crimes == 1, select = c("I_adult_cares", "I_adult_listens", "I_adult_compliments", "I_student_cares", "I_student_listens", "I_student_believes", "I_bullying_self_esteem", "I_fear_school", "I_fear_bus", "I_fear_other")))
+
+```
+
+<br/>
+
+##### **Exploratory  Data Analysis - Future Prospects**
+
+```{r echo = FALSE}
+# extract and group data
+# reference source: https://stackoverflow.com/questions/42874619/percentage-count-by-group-using-dplyr
+after_grad <- future_impact %>% group_by(I_school_after_graduation) %>% summarize(percentage = n() / nrow(.))
+college_grad <- future_impact %>% group_by(I_college_graduate) %>% summarize(percentage = n() / nrow(.))
+
+# plot pie chart on whether they think they will seek for further education after high school
+# reference source: http://www.sthda.com/english/wiki/ggplot2-pie-chart-quick-start-guide-r-software-and-data-visualization
+after_grad_plot <- ggplot(data = after_grad, aes(x = "", y = percentage, fill = I_school_after_graduation)) + geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0) + geom_text(aes(y = percentage/3 + c(0, cumsum(percentage)[-length(percentage)]), label = percent(percentage)), size = 5) + labs(fill = "Do you think you will attend school after high school?") + theme(legend.title = element_text( size = 8), legend.text = element_text(size = 8), axis.title.x = element_blank())
+after_grad_plot
+
+# plot pie chart on whether they think they will graduate from a 4 year college 
+# reference source: https://stackoverflow.com/questions/47635919/ggplot2-pie-chart-bad-position-of-labels
+college_grad_plot <- ggplot(data = college_grad, aes(x = "", y = percentage, fill = I_college_graduate)) + geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0) + geom_text(aes(label = percent(percentage)),position = position_stack(vjust = 0.5), size = 4) + labs(fill = "Do you think you will graduate from a 4-year college?") + theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8), axis.title.x = element_blank())
+college_grad_plot
+
+```
+
+This pie chart indicates that out of those survey respondents who responded to have observed any sort of criminal activities at school, 94% thinks that they will attend school after high school and 84.4% thinks that they will graduate from a 4-year college. Therefore, although their school may have incidents of criminal activities, this does not seem to have a relationship with students' future prospects. 
+
+<br/>
+
+##### **Exploratory  Data Analysis - Mental health**
+
+```{r echo = FALSE}
+# extract and group data for each variable
+# reference source: https://stackoverflow.com/questions/42874619/percentage-count-by-group-using-dplyr
+adult_care_perc <- mental_impact %>% group_by(I_adult_cares) %>% summarize(percentage = 100 * n() / nrow(.))
+adult_listen_perc <- mental_impact %>% group_by(I_adult_listens) %>% summarize(percentage = 100 * n() / nrow(.))
+adult_compliments_perc <- mental_impact %>% group_by(I_adult_compliments) %>% summarize(percentage = 100 * n() / nrow(.))
+student_care_perc <- mental_impact %>% group_by(I_student_cares) %>% summarize(percentage = 100 * n() / nrow(.))
+student_listens_perc <- mental_impact %>% group_by(I_student_listens) %>% summarize(percentage = 100 * n() / nrow(.))
+student_believes_perc <- mental_impact %>% group_by(I_student_believes) %>% summarize(percentage = 100 * n() / nrow(.))
+self_esteem_perc <- mental_impact %>% group_by(I_bullying_self_esteem) %>% summarize(percentage = 100 * n() / nrow(.))
+fear_school_perc <- mental_impact %>% group_by(I_fear_school) %>% summarize(percentage = 100 * n() / nrow(.))
+fear_bus_perc <- mental_impact %>% group_by(I_fear_bus) %>% summarize(percentage = 100 * n() / nrow(.))
+fear_other_perc <- mental_impact %>% group_by(I_fear_other) %>% summarize(percentage = 100 * n() / nrow(.))
+
+adult_care_plot <- ggplot(data = adult_care_perc, aes(x = I_adult_cares, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("Is there an adult at school that really cares about you?", width = 30)) + theme(axis.text=element_text(size = 7),axis.title=element_text(size=9,face="bold")) 
+
+adult_listen_plot <- ggplot(data = adult_listen_perc, aes(x = I_adult_listens, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("Is there an adult at school who listens to you when you have something to say?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+adult_compliments_plot <- ggplot(data = adult_compliments_perc, aes(x = I_adult_compliments, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("Is there an adult at school who tells you when you do a good job?", width = 30))+ theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+student_care_plot <- ggplot(data = student_care_perc, aes(x = I_student_cares, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("Is there a student at school that really cares about you?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold")) 
+
+student_listens_plot <- ggplot(data = student_listens_perc, aes(x = I_student_listens, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("Is there a student at school who listens to you when you have something to say?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+student_believes_plot <- ggplot(data = student_believes_perc, aes(x = I_student_believes, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("Is there a student at school who believes that you will be a success? ", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+self_esteem_plot <- ggplot(data = self_esteem_perc, aes(x = I_bullying_self_esteem, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("This year, how much has bullying had a negative effect on how you feel about yourself?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+fear_school_plot <- ggplot(data = fear_school_perc, aes(x = I_fear_school, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("How often are you afraid that someone will attack or harm you in the school buidling/property?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+fear_bus_plot <- ggplot(data = fear_bus_perc, aes(x = I_fear_bus, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("How often are you afraid that someone will attack or harm you on a school bus or on the way to and from school?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+fear_other_plot <- ggplot(data = fear_other_perc, aes(x = I_fear_other, y = percentage)) + geom_bar(stat = 'identity') + xlab(str_wrap("How often are you afraid that someone will attack or harm you on besides these times?", width = 30)) + theme(axis.text=element_text(size=7),axis.title=element_text(size=9,face="bold"))
+
+plot_grid(adult_care_plot, adult_listen_plot, adult_compliments_plot) 
+plot_grid(student_care_plot, student_listens_plot, student_believes_plot, self_esteem_plot)
+plot_grid(fear_school_plot, fear_bus_plot, fear_other_plot)
+
+```
+
+Out of those survey respondents who responded to have observed any sort of criminal activities at school, most of them did not answer that exhibit concern for their mental health. A large majority of them showed positive responses to questions that relate to students' self-esteem or perception of safety. Therefore, this conveys that even if a school may have incidents of criminal activities, this does not seem to have a significant relationship with students' mental health. 
+
+<br/>
+
+## **4. Conclusion and Future Actions**
+My hypothesis was that all 3 factors (school environment, school policies, and student characteristics) would have a relationship with crime rate at school. However, different school policies to ensure student safety or regulate criminal activities did not seem to have relationship with crimes rate based on statistical and exploratory data analysis. 
+
+The results indicate that for school environment, school level has the most statistically significant and greatest impact on school crimes rate, with high school having highest crime rate. For student characteristics, students' sexual orientation and grades seemed to have relationship with their perception of criminal activities. Students who did not identify themselves as straight and students with lower grades observed more crimes. Students' participation of extracurricular clubs also had a slight relationship with crimes rate, with students who were more actively participated in clubs observed more crimes. 
+
+Moreover, I predicted that school crime would have significant impact on students' future prospects and their mental health. However, surprisingly, school crimes do not raise significant concern for students' future prospects or their mental health. 
+
+However, these results suggest that the impact of school crimes may be concentrated on the victims. Students who identified themselves as part of the LGBTQ community seemed to have observed higher rate of criminal activities. Also, there was a small portion of survey respondents whose future prospects and mental helath have been negatively impacted by school crimes. Therefore, further study focused on the minority and potential victims should be conducted. 
