@@ -7,7 +7,7 @@ Ko-Wun Kim <br/>
 
 #### **Project Goal and Hypothesis**
 
-> This project aims to analyze the criminal activites at school.
+> This project aims to analyze the criminal activites at school using R.
 > Specifically, it investigates the factors for perception/occurrence of
 > school crimes and whether becoming involved with criminal activities
 > at school, either as an inflictor or a victim, has a significant
