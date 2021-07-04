@@ -43,7 +43,7 @@ data preparation and renaming had to be performed.
 
 **1. Data Preparation** <br/>
 
-The data spans across screen questions, student experiences,
+The data span across screen questions, student experiences,
 environmental questions, school criminal activities, student
 characteristics, as well as data regarding any specific incidents.
 Because the project is focused on identifying factors and impact of
