@@ -656,7 +656,7 @@ exploratory data analysis on these variables have been performed.
 
 Students who identified their sexual orientation as straight seemed to
 perceive school crimes as lower than those that did not. Also, students
-who have reported to have gotten mostly F’s seemed to perceive school
+who have reported to have received mostly F’s seemed to perceive school
 crimes as higher than those who received other grades. A possible reason
 for this is that students who do not identify as straight could have
 been more likely to become victims of school crimes than those who did,
