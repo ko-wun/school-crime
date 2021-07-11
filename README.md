@@ -185,7 +185,7 @@ missing values have been replaced to 0 for easier analysis as well.
 
 ##### **Statistical Data Analysis**
 
-Because the dataset is categorical variables, a logistic regression has
+Because the dataset is consisted of categorical variables, a logistic regression has
 been performed to identify the most significant predictor for crimes.
 
     ## 
