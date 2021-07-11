@@ -391,7 +391,7 @@ been performed to identify the most significant predictor for crimes.
     ## Number of Fisher Scoring iterations: 22
 
 The variables related to school policies all had low statistical
-significance, higher than confidence level of 0.05. But out of those,
+significance, higher than confidence level of 0.05. But out of those variables,
 badge and anonymous report are relatively statistically significant.
 Therefore, further exploratory data analysis was performed on these
 variables to ensure that these two variables indeed do not have
@@ -416,7 +416,7 @@ to wear badges/picture identification or not.
 
 Furthermore, there does not seem to be a relationship between crimes
 rate and whether school provides a means for anonymous reporting. The
-crimes rate do not differe much on whether the school has a way for
+crimes rate do not differ much on whether the school has a way for
 anonymous reporting. <br/> All variables related to school policies did
 not have statistical significance and even those with relatively higher
 statistical significance do not seem to have relationship with school
