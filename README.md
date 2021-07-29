@@ -1,7 +1,6 @@
 Factors and Impact of School Crime
 ================
 Ko-Wun Kim <br/>
-5/14/2021
 
 ## **0. Introduction**
 
